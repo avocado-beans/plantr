@@ -1,18 +1,21 @@
 from pages.modules import *
 import streamlit as st
+import pandas as pd
 
-st.set_page_config(page_title="PLANTR | USING AI TO SAVE THE 🌎, ONE 🌱 AT A TIME", page_icon="🍀")
+st.set_page_config(page_title="THE WEBFARM | USING AI TO SAVE THE 🌎, ONE 🌱 AT A TIME", page_icon="images/icon.png")
 
 st.sidebar.page_link("main.py", label="HOME", icon="🏠")
 st.sidebar.page_link("pages/scanPlant.py", label="SCAN A PLANT", icon="🌱")
 st.sidebar.page_link("pages/follytest.py", label="PICK A LOCATION", icon="🗺️")
 st.sidebar.page_link("pages/rippleEffects.py", label="PREDICT EFFECTS", icon="🌎")
 
-st.image("images/notahomeplant.png")
-st.header("using ai to save the 🌎, one 🌱 at a time", divider='green')
-st.write("**Drag in a pic' of a cool plant and see how it could affect different ecosystems!**")
-
+st.image("images/logo.png")
+st.header("", divider='green')
+#Using AI to save the 🌎, one 🌱 at a time
+st.header("**Drag in a picture of a plant and see how it could affect different ecosystems!**")
+st.divider()
 uploaded_file = st.file_uploader("Choose a file")
+
 d = st.empty()
 if uploaded_file is not None:
     image = uploaded_file.getvalue()
@@ -30,7 +33,7 @@ if uploaded_file is not None:
     with open ('cmnNM.txt', 'w') as file:
         file.write("The ")
         file.write(plantName[1])
-    response = askAI21("Q: Tell me about the plant species known as "+plantName[0]+". \nA:")
+    response = gemini("Tell me about the plant species known as "+plantName[0]+".")
     with left:
         st.write(response)
         st.write("**(Hint: Go to the sidebar and hit PICK LOCATION to pick the area you wanna see this plant placed.)**")
@@ -39,51 +42,47 @@ if uploaded_file is not None:
     st.divider()
     
     st.header(f"About {plantName[0]}:", divider='green')
+    pre_apiKey = "iZM0rbUN67u9PmtCMpaS0NyDY8gtXRNsKwK_-OIW-OE"
+
+    url = f"https://trefle.io/api/v1/plants/search?token={pre_apiKey}&q={plantName[0]}"
+
+    response = requests.get(url)
+    plantSpecies = json.loads(response.text)['data'][0]['slug']
+    plantDataURL = f"https://trefle.io/api/v1/species/{plantSpecies}?token={pre_apiKey}"
+    response = requests.get(plantDataURL)
+    plantData = json.loads(response.text)
+
+    df = pd.DataFrame({
+        "Native Locations": plantData['data']['distribution']['native']
+        })
+    df1 = pd.DataFrame({"Introduced to Locations": plantData['data']['distribution']['introduced']    
+        })
     
-    question = f"Q: Where does the plant species {plantName[0]} originate?"
-    st.subheader("Q: Where does the plant originate?")
+    question = f"Where does the plant species {plantName[0]} originate?"
+    st.subheader("Q: Where does the plant originate?") 
+    st.table(df)
+    st.table(df1)
     
-    answer = askAI21(question+" \nA:")
-    st.write(answer)
-    
-    question = f"Q: What kind of climate does the plant species {plantName[0]} prefer?"
+    question = f"What kind of climate does the plant species {plantName[0]} prefer?"
     st.subheader("Q: What kind of climate does the plant prefer?")
     
-    answer = askAI21(question+" \nA:")
+    answer = gemini(question)
     st.write(answer)
     
-    question = f"Q: What are the natural predators of the plant species {plantName[0]}?"
-    st.subheader("What are the natural predators of the plant?")
-    
-    answer = askAI21(question+" \nA:")
-    st.write(answer)
-    
-    question = f"Q: What are the nutritional requirements of the plant species {plantName[0]}?"
+    question = f"What are the space and nutritional requirements of the plant species {plantName[0]}? (State quantitatively.)"
     st.subheader("Q: What are the nutritional requirements of the plant?")
-    
-    answer = askAI21(question+" \nA:")
+    answer = gemini(question)
     st.write(answer)
     
-    question = f"Q: How can the plant species {plantName[0]} be used for human benefit?"
+    
+    question = f"How can the plant species {plantName[0]} be used for human benefit?"
     st.subheader("Q: How can I use this plant?")
     
-    answer = askAI21(question+" \nA:")
+    answer = gemini(question)
     st.write(answer)
     
-    question = f"Q: If edible, what kind of food can I make with the plant species {plantName[0]}?"
-    st.subheader("Q: What kind of food can I make with it? (if possible)")
-    
-    answer = askAI21(question+" \nA:")
-    st.write(answer)
-    
-st.divider()
-st.header("why plantr?")
-st.write("Agriculture is a very dominant part of Ethiopia's economy, just like how it is with most other developing countries. We have recently started to use a more modern and technology-based approach when it comes to farming; and this project aims to play a part in that.  \n  \nPlantr is a project that combines a chatGPT-like LLM (AI21) and an image recognition API (Pl@ntNet) to first recognize and identify plants from pictures and then give the user information about how the plant can be taken care of, how it could be used, etc.")
-st.header("okay, but, like, what makes this cool?")
-st.write("Well, that's a very good question. After all, tech isn't tech if it isn't cool, right?  \n  \nAny how, the wow-factor of this cool little site is that you can use the LLM to sort-of roughly predict what kind of effect introducing a novel plant population would have on the ecosystem it joins. There's a map to choose co-ordinates and everything.  \n  \nI admit this approach is far from perfect, but I believe it paves the way towards using these AI models and API's in new and innovative ways.")
     
 st.divider()
 l, r = st.columns(2)
 with r:
-    st.caption("made with ❤️ by Estifanos Tolemariam")
-
+    st.caption("made with 💚 by Estifanos Tolemariam")
