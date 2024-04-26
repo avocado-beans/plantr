@@ -1,7 +1,7 @@
 import streamlit as st
 from pages.modules import *
 from streamlit_back_camera_input import back_camera_input
-
+import pandas as pd
 
 st.set_page_config(page_title="SCAN A PLANT | THE WEBFARM", page_icon="images/icon.png")
 st.sidebar.page_link("main.py", label="HOME", icon="🏠")
