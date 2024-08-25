@@ -1,60 +1,88 @@
+from pages.modules import *
 import streamlit as st
-from streamlit.runtime.scriptrunner import add_script_run_ctx
-from streamlit_javascript import st_javascript
-import time
-import random
-import requests
-import threading
-import uuid
+import pandas as pd
 
-Games = ['Riding Extreme 3D','My Clone Army','Chain Cube 2048','Train Miner','Merge Away','Twerk Race 3D','Polysphere','Mud Racing','Mow and Trim']
-hide_streamlit_style = """<script src="https://telegram.org/js/telegram-web-app.js"></script><style>div[data-testid="stToolbar"] {visibility: hidden;height: 0%;position: fixed;}div[data-testid="stDecoration"] {visibility: hidden;height: 0%;position: fixed;}div[data-testid="stStatusWidget"] {visibility: hidden;height: 0%;position: fixed;}#MainMenu {visibility: hidden;height: 0%;}header {visibility: hidden;height: 0%;}footer {visibility: hidden;height: 0%;}</style>"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.set_page_config(page_title="THE WEBFARM | USING AI TO SAVE THE 🌎, ONE 🌱 AT A TIME", page_icon="images/icon.png")
 
-def generate_code():
-    client_id = str(uuid.uuid4())
+st.sidebar.page_link("main.py", label="HOME", icon="🏠")
+st.sidebar.page_link("pages/scanPlant.py", label="SCAN A PLANT", icon="🌱")
+st.sidebar.page_link("pages/follytest.py", label="PICK A LOCATION", icon="🗺️")
+st.sidebar.page_link("pages/rippleEffects.py", label="PREDICT EFFECTS", icon="🌎")
 
-    return_value = st_javascript("""await fetch('https://fullstackpython.com').then(function() {
-      return 'Wyoming';
-    });""")
+st.image("images/logo.png")
+st.header("", divider='green')
+#Using AI to save the 🌎, one 🌱 at a time
+st.header("**Drag in a picture of a plant and see how it could affect different ecosystems!**")
+st.divider()
+uploaded_file = st.file_uploader("Choose a file")
 
-    time.sleep(2)
-    st.markdown(f"Return value was: {return_value}")
-    #return return_value
+d = st.empty()
+if uploaded_file is not None:
+    image = uploaded_file.getvalue()
+    st.image(image)
+    
+    d.success("**PROCESSING IMAGE...**")
+    with open ('images/img.jpg','wb') as file:
+        file.write(image)
+    plantName = getPlant('images/img.jpg')
+    st.header(f"{plantName[0]}: The {plantName[1]}", divider='green')
+    d.success("**DONE!**")
+    left, right = st.columns(2)
+    with open ('plntNM.txt','w') as file:
+        file.write(plantName[0])
+    with open ('cmnNM.txt', 'w') as file:
+        file.write("The ")
+        file.write(plantName[1])
+    response = gemini("Tell me about the plant species known as "+plantName[0]+".")
+    with left:
+        st.write(response)
+        st.write("**(Hint: Go to the sidebar and hit PICK LOCATION to pick the area you wanna see this plant placed.)**")
+    with right:
+        st.image("images/img.jpg")
+    st.divider()
+    
+    st.header(f"About {plantName[0]}:", divider='green')
+    pre_apiKey = "iZM0rbUN67u9PmtCMpaS0NyDY8gtXRNsKwK_-OIW-OE"
 
-generate_code()
-c = st.container(border=True)
-game_ids = {'Riding Extreme 3D': 1,'My Clone Army': 2,'Chain Cube 2048': 3,'Train Miner': 4,'Merge Away': 5,'Twerk Race 3D': 6,'Polysphere': 7,'Mud Racing': 8,'Mow and Trim': 9}
-option = c.selectbox('label',Games, label_visibility='hidden')
+    url = f"https://trefle.io/api/v1/plants/search?token={pre_apiKey}&q={plantName[0]}"
 
-key_code = c.empty()
-key_code.info("Click [GENERATE] to generate a new code.")
+    response = requests.get(url)
+    plantSpecies = json.loads(response.text)['data'][0]['slug']
+    plantDataURL = f"https://trefle.io/api/v1/species/{plantSpecies}?token={pre_apiKey}"
+    response = requests.get(plantDataURL)
+    plantData = json.loads(response.text)
 
-progress_text = "Operation in progress. Please wait."
-progress_bar = c.empty()
-button = c.empty()
-time_to_code = 10
-codes = []
-
-def parse_keys(game_id, number):
-    time.sleep(time_to_code)
-    codes.append('SUCK-MY-MIDDLEFINGER')
-
-def generate_keys():
-    button.button('GENERATE ANOTHER ONE', key=random.getrandbits(128), disabled=True)
-    progress_bar.progress(0, text='')
-    response = requests.get('https://api.gamepromo.io')
-    parsekeys = threading.Thread(target=parse_keys,args=(game_ids[option],1))
-    add_script_run_ctx(parsekeys)
-    parsekeys.start()
-    for percent_complete in range(100):
-        time.sleep(time_to_code/100)
-        progress_bar.progress(percent_complete + 1, text=f'{percent_complete + 1}%')
-        key_code.warning(f"Generating codes {'.'*((percent_complete+1)%4)}")
-    key_code.success(f"Finished generating codes!")
-    for code in codes:
-        progress_bar.code(code, language="python")
-    regenerate = button.button('GENERATE ANOTHER ONE', key=random.getrandbits(128), disabled=False, on_click=generate_keys)
-    time.sleep(60)
-
-button.button(f'GENERATE', key=random.getrandbits(128), on_click=generate_keys)
+    df = pd.DataFrame({
+        "Native Locations": plantData['data']['distribution']['native']
+        })
+    df1 = pd.DataFrame({"Introduced to Locations": plantData['data']['distribution']['introduced']    
+        })
+    
+    question = f"Where does the plant species {plantName[0]} originate?"
+    st.subheader("Q: Where does the plant originate?") 
+    st.table(df)
+    st.table(df1)
+    
+    question = f"What kind of climate does the plant species {plantName[0]} prefer?"
+    st.subheader("Q: What kind of climate does the plant prefer?")
+    
+    answer = gemini(question)
+    st.write(answer)
+    
+    question = f"What are the space and nutritional requirements of the plant species {plantName[0]}? (State quantitatively.)"
+    st.subheader("Q: What are the nutritional requirements of the plant?")
+    answer = gemini(question)
+    st.write(answer)
+    
+    
+    question = f"How can the plant species {plantName[0]} be used for human benefit?"
+    st.subheader("Q: How can I use this plant?")
+    
+    answer = gemini(question)
+    st.write(answer)
+    
+    
+st.divider()
+l, r = st.columns(2)
+with r:
+    st.caption("made with 💚 by Estifanos Tolemariam")
