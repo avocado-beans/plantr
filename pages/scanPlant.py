@@ -40,7 +40,7 @@ if image:
     st.divider()
     
     st.header(f"About {plantName[0]}:")
-    pre_apiKey = "iZM0rbUN67u9PmtCMpaS0NyDY8gtXRNsKwK_-OIW-OE"
+    pre_apiKey = os.env['PREKEY']
 
     url = f"https://trefle.io/api/v1/plants/search?token={pre_apiKey}&q={plantName[0]}"
 
