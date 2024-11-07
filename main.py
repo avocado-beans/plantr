@@ -1,6 +1,7 @@
 from pages.modules import *
 import streamlit as st
 import pandas as pd
+import os
 
 st.set_page_config(page_title="THE WEBFARM | USING AI TO SAVE THE 🌎, ONE 🌱 AT A TIME", page_icon="images/icon.png")
 
@@ -42,7 +43,7 @@ if uploaded_file is not None:
     st.divider()
     
     st.header(f"About {plantName[0]}:", divider='green')
-    pre_apiKey = "iZM0rbUN67u9PmtCMpaS0NyDY8gtXRNsKwK_-OIW-OE"
+    pre_apiKey = os.env['PREKEY']
 
     url = f"https://trefle.io/api/v1/plants/search?token={pre_apiKey}&q={plantName[0]}"
 
